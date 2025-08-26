@@ -79,9 +79,7 @@ def start_flask():
     app.run(host="0.0.0.0", port=10000)
 
 
-if __name__ == "__main__":
-    threading.Thread(target=start_flask).start()
-    bot_loop()
+
     
 if __name__ == "__main__":
     send_telegram_message("🚀 Test: Your bot is connected successfully!")
