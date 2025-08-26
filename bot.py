@@ -26,10 +26,10 @@ MAX_PAIR_AGE_HOURS = 48 # New pairs only
 
 def fetch_tokens():
     try:
-        response = requests.get(DEX_API, timeout=10)
+        response = requests.get("https://api.dexscreener.com/latest/dex/search?q=solana", timeout=10)
         if response.status_code == 200:
             data = response.json()
-            return data.get("pairs", [])
+            return data.get("pairs", []) or []   # ✅ Always return a list
         else:
             print(f"Error {response.status_code}: {response.text}")
             return []
