@@ -12,10 +12,10 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # Filters (you can override via Render env vars)
-MIN_LIQUIDITY = float(os.getenv("MIN_LIQUIDITY", "35000"))   # USD
-MIN_FDV       = float(os.getenv("MIN_FDV", "500000"))        # USD
-MAX_AGE_HRS   = float(os.getenv("MAX_AGE_HRS", "24"))        # hours
-MIN_TXNS_H1   = int(os.getenv("MIN_TXNS_H1", "300"))         # buys+sells in last 1h
+MIN_LIQUIDITY = float(os.getenv("MIN_LIQUIDITY", "20000"))   # USD
+MIN_FDV       = float(os.getenv("MIN_FDV", "100000"))        # USD
+MAX_AGE_HRS   = float(os.getenv("MAX_AGE_HRS", "2"))        # hours
+MIN_TXNS_H1   = int(os.getenv("MIN_TXNS_H1", "100"))         # buys+sells in last 1h
 SCAN_INTERVAL = int(os.getenv("SCAN_INTERVAL", "60"))        # seconds
 
 # Dexscreener search for Solana
