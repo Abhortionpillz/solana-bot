@@ -6,9 +6,14 @@ import os
 from dotenv import load_dotenv
 
 # Load env vars
-load_dotenv()
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+import os
+
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+    print("⚠️ Telegram not configured.")
+    exit(1)  # stop program if not configured
 
 app = Flask(__name__)
 
