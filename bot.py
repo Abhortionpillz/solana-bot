@@ -24,7 +24,7 @@ def filter_tokens(pairs):
             liquidity = p.get("liquidity", {}).get("usd", 0)
             fdv = p.get("fdv", 0)
             txns = p.get("txns", {}).get("h1", {}).get("buys", 0) + p.get("txns", {}).get("h1", {}).get("sells", 0)
-            if liquidity > 35000 and fdv > 500000 and txns > 300:
+            if liquidity > 25000 and fdv > 300000 and txns > 200:
                 gems.append(p)
         except:
             continue
@@ -39,7 +39,7 @@ def bot_loop():
             if gems:
                 latest_gems = gems  # update global gems
                 print("✅ Found Gems:", [g["baseToken"]["symbol"] for g in gems])
-        time.sleep(60)
+        time.sleep(600)
 
 @app.route("/")
 def home():
