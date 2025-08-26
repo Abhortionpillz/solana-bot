@@ -1,32 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Memecoin Bot Status</title>
-  <link rel="stylesheet" href="../static/style.css">
+  <meta charset="utf-8">
+  <title>Memecoin Scanner Status</title>
+  <meta http-equiv="refresh" content="60">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>🚀 Memecoin Bot Status</h1>
-  {% if gems %}
-    <h2>Latest Gems Found:</h2>
-    <ul>
-      {% for gem in gems %}
-        <li>
-          <strong>{{ gem.baseToken.symbol }}</strong>  
-          | Liquidity: ${{ gem.liquidity.usd }}  
-          | FDV: ${{ gem.fdv }}  
-          | Trades (1h): {{ gem.txns.h1.buys + gem.txns.h1.sells }}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>No gems found yet... scanning 🔍</p>
-  {% endif %}
-</body>
-<script>
-  setTimeout(function(){
-    window.location.reload(1);
-  }, 60000); // 60,000 ms = 60 sec
-</script>
-</html>
+  <h1>🚀 Memecoin Scanner Status</h1>
+  <p>Started: {{ started }}</p>
+  <p>
+    Filters —
+    Liquidity ≥ ${{ "{:,.0f}".format(filters.MIN_LIQUIDITY) }},
+    FDV ≥ ${{ "{:,.0f}".format(filters.MIN_FDV) }},
+    Age ≤ {{ filters.MAX_AGE_HRS }}h,
+    1h Trades ≥ {{ filters.MIN_TXNS_H1 }}
+  </p>
+  <p>Scan interval: {{ filters.SCAN_INTERVAL }}s • <a href="/force-scan">Force scan</a></p>
 
+  {% if gems and gems|length %}
+    <h2>💎 Latest Gems ({{ gems|length }})</h2>
+    <div class="cards">
+      {% for g in gems %}
+        <div class="card">
+          <div class="row">
+            <div class="name">
+              {{ g.baseToken.name or "Unknown" }} ({{ g.baseToken.symbol or "" }})
+            </div>
+            <div class="link">
+              <a href="{{ g.url }}" target="_blank" rel="noopener">Chart ↗</a>
+            </div>
+          </div>
+          <div class="meta">
+            <div>Liquidity: ${{ "{:,.0f}".format(g.liquidity.usd or 0) }}</div>
+            <div>FDV: ${{ "{:,.0f}".format(g.fdv or 0) }}</div>
+          </div>
+          <div class="meta">
+            <div>1h Buys: {{ g.txns.h1.buys or 0 }}</div>
+            <div>1h Sells: {{ g.txns.h1.sells or 0 }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No gems yet… scanning 🔍</p>
+  {% endif %}
+
+  <footer>Auto-refresh every 60s</footer>
+</body>
+</html>
