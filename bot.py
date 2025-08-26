@@ -88,5 +88,26 @@ def start_flask():
     
 if __name__ == "__main__":
     send_telegram_message("🚀 Test: Your bot is connected successfully!")
+
+import time
+import requests
+import os
+
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+def send_telegram_message(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {"chat_id": CHAT_ID, "text": text}
+    requests.post(url, data=data)
+    print(f"📩 Sent to Telegram: {text}")
+
+# Send test message on startup
+send_telegram_message("🚀 Bot started and is running!")
+
+# Keep the bot alive with a loop
+while True:
+    send_telegram_message("⏰ Still alive and running...")
+    time.sleep(60)  # wait 1 minute
     
 
