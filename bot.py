@@ -47,17 +47,28 @@ def fetch_tokens():
 
 def filter_tokens(pairs):
     gems = []
+    if not pairs:
+        return gems
+
+    print("📊 Debug: Fetched tokens =", len(pairs))  # 👈 print count
+
     for p in pairs:
         try:
-            liquidity = p.get("liquidity", {}).get("usd", 0)
-            fdv = p.get("fdv", 0)
-            txns = p.get("txns", {}).get("h1", {}).get("buys", 0) + p.get("txns", {}).get("h1", {}).get("sells", 0)
+            liquidity = float(p['liquidity']['usd'])
+            fdv = float(p['fdv'])
+            age = int(p['pairCreatedAt'])  # milliseconds timestamp
+            trades = int(p['txns']['h1']['buys']) + int(p['txns']['h1']['sells'])
 
-            if liquidity > 25000 and fdv > 100000 and txns > 200:
+            # Debug: print basic info
+            print(f"Token {p['baseToken']['symbol']} | Liquidity={liquidity}, FDV={fdv}, Trades={trades}")
+
+            # Your filter rules
+            if liquidity > 20000 and fdv > 100000 and trades > 100:
                 gems.append(p)
-        except:
-            continue
+        except Exception as e:
+            print("⚠️ Error parsing token:", e)
     return gems
+
 
 
 def bot_loop():
@@ -108,6 +119,6 @@ send_telegram_message("🚀 Bot started and is running!")
 # Keep the bot alive with a loop
 while True:
     send_telegram_message("⏰ Still alive and running...")
-    time.sleep(60)  # wait 1 minute
+    time.sleep(600)  # wait 10 minute
     
 
