@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memecoin Bot Status</title>
+  <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+  <h1>🚀 Memecoin Bot Status</h1>
+  {% if gems %}
+    <h2>Latest Gems Found:</h2>
+    <ul>
+      {% for gem in gems %}
+        <li>
+          <strong>{{ gem.baseToken.symbol }}</strong>  
+          | Liquidity: ${{ gem.liquidity.usd }}  
+          | FDV: ${{ gem.fdv }}  
+          | Trades (1h): {{ gem.txns.h1.buys + gem.txns.h1.sells }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No gems found yet... scanning 🔍</p>
+  {% endif %}
+</body>
+</html>
+
