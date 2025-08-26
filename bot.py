@@ -53,7 +53,7 @@ def filter_tokens(pairs):
             fdv = p.get("fdv", 0)
             txns = p.get("txns", {}).get("h1", {}).get("buys", 0) + p.get("txns", {}).get("h1", {}).get("sells", 0)
 
-            if liquidity > 25000 and fdv > 300000 and txns > 200:
+            if liquidity > 25000 and fdv > 100000 and txns > 200:
                 gems.append(p)
         except:
             continue
