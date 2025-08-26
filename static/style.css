@@ -19,6 +19,9 @@ a:hover { text-decoration: underline; }
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
   margin-top: 12px;
+  border: #20e3a2 solid;
+  border-radius: 10px;
+  padding: 20px;
 }
 
 .card {
@@ -38,4 +41,12 @@ a:hover { text-decoration: underline; }
 
 .name { font-weight: 700; }
 .meta { display: flex; gap: 16px; font-size: 14px; color: #c9cfdb; }
-footer { margin-top: 24px; opacity: 0.7; font-size: 12px; }
+footer { margin-top: 24px; opacity: 0.7; font-size: 12px; text-align: center;}
+.main{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: #c9cfdb solid;
+  padding: 20px;
+}

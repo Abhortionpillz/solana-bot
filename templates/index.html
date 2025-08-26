@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
+  <div class="main">
   <h1>🚀 Memecoin Scanner Status</h1>
   <p>Started: {{ started }}</p>
   <p>
@@ -20,6 +21,7 @@
 
   {% if gems and gems|length %}
     <h2>💎 Latest Gems ({{ gems|length }})</h2>
+    </div>
     <div class="cards">
       {% for g in gems %}
         <div class="card">
@@ -42,9 +44,9 @@
         </div>
       {% endfor %}
     </div>
-  {% else %}
+  
     <p>No gems yet… scanning 🔍</p>
-  {% endif %}
+  
 
   <footer>Auto-refresh every 60s</footer>
 </body>
