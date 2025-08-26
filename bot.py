@@ -172,12 +172,10 @@ def bot_loop():
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         send_telegram_message("🚀 Bot is live and scanning…")
 
-    while True:
-        try:
-            scan_once()
-        except Exception as e:
-            print("❌ Scan cycle exception:", e)
-        time.sleep(SCAN_INTERVAL)
+   # Keep the bot alive with a loop
+while True:
+    send_telegram_message("⏰ Still alive and running...")
+    time.sleep(300)  # wait 5 minute
 
 
 # ------------- Flask routes -------------
