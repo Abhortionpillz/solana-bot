@@ -45,8 +45,9 @@
       {% endfor %}
     </div>
   
-    <p>No gems yet… scanning 🔍</p>
-  
+   {% else %}
+    <p>No gems found yet... scanning 🔍</p>
+  {% endif %}
 
   <footer>Auto-refresh every 60s</footer>
 </body>
