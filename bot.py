@@ -1,84 +1,54 @@
-import os
-import requests
+from flask import Flask, render_template
+import threading
 import time
-from dotenv import load_dotenv
-from telegram import Bot
+import requests
 
-# Load environment variables (.env for local, Render uses dashboard)
-load_dotenv()
+app = Flask(__name__)
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-# =============================
-# Dexscreener API Endpoint
-# =============================
-DEX_API = "https://api.dexscreener.com/latest/dex/tokens/solana"
-
-# =============================
-# Filters
-# =============================
-MIN_LIQUIDITY = 30000   # $35k
-MIN_FDV = 400000        # $500k
-MAX_PAIR_AGE_HOURS = 48 # New pairs only
+latest_gems = []  # store last found tokens
 
 def fetch_tokens():
+    url = "https://api.dexscreener.com/latest/dex/tokens"
     try:
-        response = requests.get("https://api.dexscreener.com/latest/dex/search?q=solana", timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("pairs", []) or []   # ✅ Always return a list
-        else:
-            print(f"Error {response.status_code}: {response.text}")
-            return []
+        res = requests.get(url, timeout=10)
+        if res.status_code == 200:
+            return res.json().get("pairs", [])
     except Exception as e:
-        print("Error fetching tokens:", e)
-        return []
+        print("Error fetching:", e)
+    return []
 
 def filter_tokens(pairs):
     gems = []
     for p in pairs:
-        liquidity = p.get("liquidity", {}).get("usd", 0)
-        fdv = p.get("fdv", 0)
-        age = p.get("pairCreatedAt", 0)
-
-        # Convert ms → hours
-        hours_old = (time.time()*1000 - age) / (1000*60*60) if age else 999
-
-        if liquidity >= MIN_LIQUIDITY and fdv >= MIN_FDV and hours_old <= MAX_PAIR_AGE_HOURS:
-            gems.append(p)
+        try:
+            liquidity = p.get("liquidity", {}).get("usd", 0)
+            fdv = p.get("fdv", 0)
+            txns = p.get("txns", {}).get("h1", {}).get("buys", 0) + p.get("txns", {}).get("h1", {}).get("sells", 0)
+            if liquidity > 35000 and fdv > 500000 and txns > 300:
+                gems.append(p)
+        except:
+            continue
     return gems
 
-def send_alert(token):
-    try:
-        name = token.get("baseToken", {}).get("name", "Unknown")
-        symbol = token.get("baseToken", {}).get("symbol", "")
-        url = token.get("url", "https://dexscreener.com/solana")
-
-        msg = f"🚀 New Solana GEM Found!\n\n" \
-              f"Name: {name} ({symbol})\n" \
-              f"Liquidity: ${token.get('liquidity', {}).get('usd', 0):,.0f}\n" \
-              f"FDV: ${token.get('fdv', 0):,.0f}\n" \
-              f"Chart: {url}"
-
-        bot.send_message(chat_id=CHAT_ID, text=msg)
-        print(f"Sent alert: {name} ({symbol})")
-    except Exception as e:
-        print("Error sending Telegram alert:", e)
-
-def main():
-    print("🚀 Bot started! Scanning Dexscreener every 60s...")
+def bot_loop():
+    global latest_gems
     while True:
         pairs = fetch_tokens()
-        gems = filter_tokens(pairs)
+        if pairs:
+            gems = filter_tokens(pairs)
+            if gems:
+                latest_gems = gems  # update global gems
+                print("✅ Found Gems:", [g["baseToken"]["symbol"] for g in gems])
+        time.sleep(60)
 
-        for g in gems:
-            send_alert(g)
+@app.route("/")
+def home():
+    return render_template("index.html", gems=latest_gems)
 
-        time.sleep(600)  # Run every 60 seconds
+def start_flask():
+    app.run(host="0.0.0.0", port=10000)
 
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=start_flask).start()
+    bot_loop()
 
