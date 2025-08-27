@@ -217,6 +217,7 @@ def start_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    # Run Flask (web) and bot loop (scanner) together
-    threading.Thread(target=start_flask, daemon=True).start()
-    bot_loop()
+    start_loop()
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
