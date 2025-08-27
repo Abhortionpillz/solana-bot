@@ -1,11 +1,13 @@
+from flask import Flask, render_template, jsonify
+from functools import lru_cache
+from threading import Lock
+
 import os
 import time
 import threading
 import requests
 from datetime import datetime
-from flask import Flask, render_template, jsonify
-from functools import lru_cache
-from threading import Lock
+
 
 # ------------- CONFIG (env) -------------
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
