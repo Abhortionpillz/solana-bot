@@ -11,12 +11,11 @@
   <h1>🚀 Memecoin Scanner Status</h1>
   <p>Started: {{ started }}</p>
   <p>
-    Filters —
-    Liquidity ≥ ${{ "{:,.0f}".format(filters.MIN_LIQUIDITY) }},
-    FDV ≥ ${{ "{:,.0f}".format(filters.MIN_FDV) }},
-    Age ≤ {{ filters.MAX_AGE_HRS }}h,
-    1h Trades ≥ {{ filters.MIN_TXNS_H1 }}
-  </p>
+  Showing tokens with: <br>
+  Liquidity ≥ ${{ "{:,.0f}".format(filters.MIN_LIQUIDITY) }}, <br>
+  Market Cap ≤ ${{ "{:,.0f}".format(filters.MAX_MC) }}, <br>
+  Holders ≥ {{ filters.MIN_HOLDERS }}
+</p>
   <p>Scan interval: {{ filters.SCAN_INTERVAL }}s • <a href="/force-scan">Force scan</a></p>
 
   {% if gems and gems|length %}
