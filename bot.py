@@ -5,6 +5,22 @@ import threading
 from flask import Flask
 from dotenv import load_dotenv
 
+from flask import Flask, render_template
+
+# Example filters (replace with your real filter config)
+class Filters:
+    MIN_LIQUIDITY = 50000
+    MAX_MC = 2000000
+    MIN_HOLDERS = 100
+
+filters = Filters()
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return render_template("index.html", filters=filters)  # <-- pass filters
+
 # Load environment variables
 load_dotenv()
 
@@ -146,14 +162,7 @@ def worker():
 # --- Start worker in background thread ---
 threading.Thread(target=worker, daemon=True).start()
 
-# --- Run Flask ---
-from flask import Flask, render_template
 
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return render_template("index.html")   # serves your index.html
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
