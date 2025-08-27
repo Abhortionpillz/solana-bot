@@ -175,10 +175,12 @@ def bot_loop():
         send_telegram_message("🚀 Bot is live and scanning…")
 
    # Keep the bot alive with a loop
-while True:
-    send_telegram_message("⏰ Still alive and running...")
-    time.sleep(300)  # wait 5 minute
-
+  while True:
+        try:
+            scan_once()
+        except Exception as e:
+            print("❌ Scan cycle exception:", e)
+        time.sleep(SCAN_INTERVAL)
 
 # ------------- Flask routes -------------
 @app.route("/")
@@ -219,7 +221,8 @@ def start_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    start_loop()
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    start_loop()   # starts the background loop
+    port = int(os.environ.get("PORT", 8080))  
+    app.run(host="0.0.0.0", port=port)  # keeps Flask alive
+
 
