@@ -1,13 +1,11 @@
-from flask import Flask, render_template, jsonify
-from functools import lru_cache
-from threading import Lock
-
 import os
 import time
 import threading
 import requests
 from datetime import datetime
-
+from flask import Flask, render_template, jsonify
+from functools import lru_cache
+from threading import Lock
 
 # ------------- CONFIG (env) -------------
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -174,13 +172,13 @@ def bot_loop():
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         send_telegram_message("🚀 Bot is live and scanning…")
 
-   # Keep the bot alive with a loop
-  while True:
+    while True:
         try:
             scan_once()
         except Exception as e:
             print("❌ Scan cycle exception:", e)
         time.sleep(SCAN_INTERVAL)
+
 
 # ------------- Flask routes -------------
 @app.route("/")
@@ -221,8 +219,6 @@ def start_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    start_loop()   # starts the background loop
-    port = int(os.environ.get("PORT", 8080))  
-    app.run(host="0.0.0.0", port=port)  # keeps Flask alive
-
-
+    # Run Flask (web) and bot loop (scanner) together
+    threading.Thread(target=start_flask, daemon=True).start()
+    bot_loop()
