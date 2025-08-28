@@ -52,7 +52,9 @@ def send_telegram(msg: str):
         print(f"📩 Sent: {msg[:50]}...")
     except Exception as e:
         print(f"❌ Telegram error: {e}")
-
+while True:
+    send_telegram_message("⏰ Still alive and running...")
+    time.sleep(300)  # wait 5 minute
 # --- Pump.fun Query ---
 def get_new_tokens_pumpfun():
     query = """
