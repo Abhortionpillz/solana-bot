@@ -10,7 +10,7 @@ from flask import Flask, render_template
 # Example filters (replace with your real filter config)
 class Filters:
     MIN_LIQUIDITY = 50000
-    MAX_MC = 2000000
+    MAX_MC = 100000
     MIN_HOLDERS = 100
 
 filters = Filters()
@@ -38,8 +38,8 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "🚀 Pump.fun + DexScreener Bot with filters is running!"
-
+    return render_template("index.html", filters=filters)  # <-- pass filters
+    
 # --- Telegram Helper ---
 def send_telegram(msg: str):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
