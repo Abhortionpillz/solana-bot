@@ -3,6 +3,15 @@ import time
 import requests
 import logging
 import telegram
+from flask import Flask, render_template
+
+# Example filters (replace with your real filter config)
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return render_template("index.html", filters=filters) 
 
 # ================== CONFIG ==================
 DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/pairs/solana"
