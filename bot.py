@@ -1,169 +1,83 @@
 import os
 import time
 import requests
-import threading
-from flask import Flask
-from dotenv import load_dotenv
+import logging
+import telegram
 
-from flask import Flask, render_template
+# ================== CONFIG ==================
+DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/pairs/solana"
+CHECK_INTERVAL = 60  # seconds between checks
+NEW_TOKEN_MAX_AGE = 300  # 5 minutes (tokens listed in last 5 minutes)
 
-# Example filters (replace with your real filter config)
-class Filters:
-    MIN_LIQUIDITY = 50000
-    MAX_MC = 100000
-    MIN_HOLDERS = 100
+# Telegram Config
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # add in Render Dashboard
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")  # your chat ID
 
-filters = Filters()
+if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+    raise Exception("⚠️ TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set in environment!")
 
-app = Flask(__name__)
+bot = telegram.Bot(token=TELEGRAM_TOKEN)
 
-@app.route("/")
-def home():
-    return render_template("index.html", filters=filters)  # <-- pass filters
+# ================== LOGGING ==================
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Load environment variables
-load_dotenv()
+# Track seen pairs to avoid duplicates
+seen_tokens = set()
 
-# --- Config ---
-BITQUERY_URL = "https://graphql.bitquery.io"
-BITQUERY_KEY = os.getenv("BITQUERY_API_KEY")   # get from https://bitquery.io
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-# Dexscreener API for Solana new pairs
-DEXSCREENER_URL = "https://api.dexscreener.com/latest/dex/tokens/solana"
-
-# --- Flask App (keeps Render alive) ---
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return render_template("index.html", filters=filters)  # <-- pass filters
-    
-# --- Telegram Helper ---
-def send_telegram(msg: str):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print("⚠️ Telegram not configured")
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": msg}
+# ================== MAIN LOOP ==================
+def fetch_new_sol_tokens():
     try:
-        requests.post(url, json=payload, timeout=10)
-        print(f"📩 Sent: {msg[:50]}...")
-    except Exception as e:
-        print(f"❌ Telegram error: {e}")
+        response = requests.get(DEXSCREENER_API, timeout=10)
+        data = response.json()
 
-# --- Pump.fun Query ---
-def get_new_tokens_pumpfun():
-    query = """
-    {
-      Solana {
-        TokenSupplyUpdates(
-          limit: {count: 5}
-          orderBy: {descending: Block_Time}
-          where: {
-            Instruction: {
-              Program: {Name: {is: "pump"}}
-            }
-          }
-        ) {
-          TokenSupplyUpdate {
-            Currency {
-              MintAddress
-              Name
-              Symbol
-            }
-          }
-          Block {
-            Time
-          }
-        }
-      }
-    }
-    """
-    headers = {"X-API-KEY": BITQUERY_KEY}
-    try:
-        resp = requests.post(BITQUERY_URL, json={"query": query}, headers=headers, timeout=15)
-        data = resp.json()
-        return data.get("data", {}).get("Solana", {}).get("TokenSupplyUpdates", [])
+        if "pairs" not in data:
+            return []
+
+        new_tokens = []
+        for pair in data["pairs"]:
+            base_token = pair.get("baseToken", {})
+            token_address = base_token.get("address")
+            token_name = base_token.get("name", "Unknown")
+            token_symbol = base_token.get("symbol", "???")
+            created_at = pair.get("pairCreatedAt", 0)
+
+            # Only alert if token is brand new
+            age_seconds = (time.time() * 1000 - created_at) / 1000
+            if token_address and token_address not in seen_tokens and age_seconds < NEW_TOKEN_MAX_AGE:
+                seen_tokens.add(token_address)
+                new_tokens.append({
+                    "name": token_name,
+                    "symbol": token_symbol,
+                    "address": token_address,
+                    "age": int(age_seconds),
+                    "url": f"https://dexscreener.com/solana/{token_address}"
+                })
+        return new_tokens
+
     except Exception as e:
-        print(f"❌ Pump.fun error: {e}")
+        logging.error(f"Error fetching Dexscreener: {e}")
         return []
 
-# --- Dexscreener New Pairs ---
-def get_new_tokens_dexscreener():
+def send_telegram_alert(token):
+    msg = (
+        f"🚀 New Solana MemeCoin Listed!\n\n"
+        f"🪙 {token['name']} ({token['symbol']})\n"
+        f"⏱ Age: {token['age']} sec\n"
+        f"🔗 [View on Dexscreener]({token['url']})"
+    )
     try:
-        resp = requests.get(DEXSCREENER_URL, timeout=15)
-        data = resp.json()
-        pairs = data.get("pairs", [])[:10]  # check latest 10
-        return pairs
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=msg, parse_mode="Markdown")
+        logging.info(f"📩 Sent alert for {token['symbol']}")
     except Exception as e:
-        print(f"❌ Dexscreener error: {e}")
-        return []
+        logging.error(f"Error sending Telegram message: {e}")
 
-# --- Background Worker ---
-def worker():
-    seen_pump = set()
-    seen_dex = set()
-
+def main():
+    logging.info("🚀 Bot started. Watching for new Solana tokens...")
     while True:
-        # Pump.fun
-        tokens_pump = get_new_tokens_pumpfun()
-        for t in tokens_pump:
-            mint = t["TokenSupplyUpdate"]["Currency"]["MintAddress"]
-            name = t["TokenSupplyUpdate"]["Currency"].get("Name", "")
-            symb = t["TokenSupplyUpdate"]["Currency"].get("Symbol", "")
-            time_block = t["Block"]["Time"]
-
-            # Filter: must have name, symbol, and valid mint
-            if mint and name and symb and mint not in seen_pump:
-                seen_pump.add(mint)
-                msg = (
-                    f"🔥 Pump.fun New Token!\n\n"
-                    f"Name: {name}\n"
-                    f"Symbol: {symb}\n"
-                    f"Mint: {mint}\n"
-                    f"Time: {time_block}"
-                )
-                send_telegram(msg)
-
-        # Dexscreener
-        tokens_dex = get_new_tokens_dexscreener()
-        for pair in tokens_dex:
-            address = pair.get("baseToken", {}).get("address")
-            name = pair.get("baseToken", {}).get("name", "")
-            symb = pair.get("baseToken", {}).get("symbol", "")
-            dex_url = pair.get("url", "")
-
-            liquidity_usd = pair.get("liquidity", {}).get("usd", 0)
-            fdv = pair.get("fdv", 0)
-
-            # Filter: liquidity ≥ $5k and FDV ≥ $10k
-            if (
-                address
-                and liquidity_usd >= 5000
-                and fdv >= 10000
-                and address not in seen_dex
-            ):
-                seen_dex.add(address)
-                msg = (
-                    f"⚡ DexScreener New Pair!\n\n"
-                    f"Name: {name}\n"
-                    f"Symbol: {symb}\n"
-                    f"Liquidity: ${liquidity_usd:,.0f}\n"
-                    f"FDV: ${fdv:,.0f}\n"
-                    f"Address: {address}\n"
-                    f"Chart: {dex_url}"
-                )
-                send_telegram(msg)
-
-        time.sleep(60)  # refresh every 60s
-
-# --- Start worker in background thread ---
-threading.Thread(target=worker, daemon=True).start()
-
-
+        new_tokens = fetch_new_sol_tokens()
+        for token in new_tokens:
+            send_telegram_alert(token)
+        time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    main()
